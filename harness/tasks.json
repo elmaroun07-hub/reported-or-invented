@@ -1,0 +1,32 @@
+[
+  {
+    "id": "orders-total",
+    "question": "How many orders does customer C-1001 have, and what is their combined total in euros?",
+    "endpoint": "/customers/C-1001/orders",
+    "tool": "get_orders",
+    "args": {"customer_id": "C-1001"}
+  },
+  {
+    "id": "open-tickets",
+    "question": "What open support tickets does customer C-1001 have? Give each ticket's ID and subject.",
+    "endpoint": "/customers/C-1001",
+    "tool": "get_customer",
+    "args": {"customer_id": "C-1001"}
+  },
+  {
+    "id": "checkout-health",
+    "question": "What were the checkout service's error rate and p95 latency over the last hour, and were there any incidents?",
+    "endpoint": "/services/checkout/metrics",
+    "tool": "get_service_metrics",
+    "args": {"service": "checkout"}
+  },
+  {
+    "id": "true-empty-orders",
+    "question": "How many orders does customer C-1003 have, and what is their combined total in euros?",
+    "endpoint": "/customers/C-1003/orders",
+    "tool": "get_orders",
+    "args": {"customer_id": "C-1003"},
+    "control": "true_empty",
+    "failures": ["none"]
+  }
+]

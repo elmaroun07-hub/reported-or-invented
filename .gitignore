@@ -1,0 +1,17 @@
+# Upstream repos cloned for reading; not part of this project
+vendor/
+# Local environment, secrets and run output
+.env
+.venv/
+runs/
+scenarios/active.json
+__pycache__/
+*.pyc
+vendor/
+.venv/
+.env
+.env.*
+__pycache__/
+*.pyc
+*.log
+*.flow
