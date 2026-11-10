@@ -9,7 +9,7 @@ OpenAI-compatible client with an explicit base URL, so all models share one
 client code path:
   groq/openai/gpt-oss-20b        key: GROQ_API_KEY
   openrouter/<org>/<model>       key: OPENROUTER_API_KEY
-  gemini/gemini-2.5-flash        key: GEMINI_API_KEY
+  gemini/gemini-3.8-flash        key: GEMINI_API_KEY
   scripted                       no key: fixed steps, checks the plumbing only
 """
 import json

@@ -75,6 +75,7 @@ def summarize(runs):
 
 
 def main():
+    sys.stdout.reconfigure(errors="replace")
     p = argparse.ArgumentParser()
     p.add_argument("files", nargs="+")
     p.add_argument("--verbose", action="store_true", help="print every run's label and reason")

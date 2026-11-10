@@ -7,11 +7,7 @@ runs/
 scenarios/active.json
 __pycache__/
 *.pyc
-vendor/
-.venv/
-.env
 .env.*
-__pycache__/
-*.pyc
 *.log
 *.flow
+!.env.example

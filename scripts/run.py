@@ -32,6 +32,7 @@ def failure_catalog():
 
 
 def main():
+    sys.stdout.reconfigure(errors="replace")
     failures_all, signalled = failure_catalog()
     p = argparse.ArgumentParser()
     p.add_argument("--framework", required=True, choices=["crewai"])
