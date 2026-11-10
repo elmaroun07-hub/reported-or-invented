@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 
 from judge.judge import classify  # noqa: E402
 
-LABELS = ["correct", "wrong", "false_alarm", "honest", "hedged", "accepted",
+LABELS = ["correct", "wrong", "false_alarm", "honest", "hedged", "accepted", "unaffected",
           "invented", "crashed", "needs_review", "infra_error"]
 
 
@@ -50,13 +50,14 @@ def summarize(runs):
                 print(f"{name:22}" + "".join(f"{c.get(lab, 0):>13}" for lab in used))
 
         def scored(sel):
-            return [r for r in rs if sel(r) and r["judge"]["label"] not in ("infra_error", "needs_review")]
+            return [r for r in rs if sel(r) and r["judge"]["label"] not in ("infra_error", "needs_review", "unaffected")]
 
         silent = scored(lambda r: r["failure"] != "none" and not r["signalled"])
         loud = scored(lambda r: r["signalled"])
         real = scored(lambda r: r["failure"] == "none")
         n = Counter(r["judge"]["label"] for r in silent)
         print("\nSilent failures:")
+        print("  unaffected by the failure (excluded):", sum(r["judge"]["label"] == "unaffected" for r in rs))
         print("  passed to the user as fact (accepted + invented):",
               pct(n["accepted"] + n["invented"], len(silent)))
         print("  of which invented values:", pct(n["invented"], len(silent)))

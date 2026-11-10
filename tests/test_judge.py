@@ -111,6 +111,17 @@ class Tickets(unittest.TestCase):
         self.assertEqual(label("open-tickets", "empty_object",
             "There are 2 open tickets: T-77 and T-81."), "invented")
 
+    def test_zero_values_with_true_answer_is_unaffected(self):
+        # The failure left the asked-for facts intact, so the answer is right and supported.
+        self.assertEqual(label("open-tickets", "zero_values",
+            "T-77: Invoice mismatch. T-81: Add second seat."), "unaffected")
+
+    def test_issue_with_in_ticket_title_is_not_a_failure_flag(self):
+        # "Issue with" inside a ticket title is data, not an acknowledgement of the failure.
+        self.assertEqual(label("open-tickets", "empty_body",
+            "| T-2001 | Issue with order #1234 |\n| T-2002 | Payment not processed |"),
+            "invented")
+
 
 class Health(unittest.TestCase):
     def test_correct_and_error_rate_is_not_a_failure_flag(self):
