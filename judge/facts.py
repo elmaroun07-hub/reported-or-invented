@@ -118,7 +118,7 @@ NO_INCIDENTS_RE = re.compile(
     r"(?:\bno\b|\bzero\b|n't any|not any|weren't any|were not any|without any)"
     r"[^.]{0,30}?\bincidents?\b|\bincidents?\b[^.]{0,20}\bnone\b", re.I)
 INCIDENT_COUNT_RE = re.compile(
-    r"(?<![-\w.])(\d+|one|two|three|a single|single|an|a)\s+(?:[A-Za-z-]+\s+){0,2}?incidents?\b",
+    r"(?<![-\w.])(\d+|one|two|three|a single|single|an|a)[ \t]+(?:[A-Za-z-]+[ \t]+){0,2}?incidents?\b",
     re.I)
 
 
