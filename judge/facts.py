@@ -234,11 +234,18 @@ TASK_FACTS = {
 TOLERANCE = {"total": 0.01, "error_rate": 1e-4, "p95_ms": 0.5}
 
 
+def subject_matches(stated, real):
+    """A stated subject matches the real one when it contains it, so a trailing note such as
+    "(open)" or "- high priority" does not matter. An empty real subject matches nothing."""
+    real = subject_key(real)
+    return bool(real) and real in subject_key(stated)
+
+
 def same(key, a, b):
     if a == UNKNOWN or b == UNKNOWN:
         return False
-    if key == "subjects":   # every stated subject matches that ticket's subject in b
-        return all(i in b and subject_key(s) == subject_key(b[i]) for i, s in a.items())
+    if key == "subjects":   # every stated subject contains that ticket's real subject in b
+        return all(i in b and subject_matches(s, b[i]) for i, s in a.items())
     if key in TOLERANCE and _is_num(a) and _is_num(b):
         return abs(a - b) <= TOLERANCE[key]
     return a == b

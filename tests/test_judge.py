@@ -262,5 +262,26 @@ class SameLineSubjects(unittest.TestCase):
         self.assertIn("subject", out["reason"])
 
 
+class SubjectContainment(unittest.TestCase):
+    """A stated subject matches the real one when it contains it, so a trailing note such
+    as "(open)" does not make it wrong; a different subject still does."""
+
+    def test_trailing_status_in_parentheses_is_correct(self):
+        self.assertEqual(label("open-tickets", "none",
+            "T-77: Invoice mismatch (open)\nT-81: Add second seat (pending)"), "correct")
+
+    def test_trailing_bracket_and_dash_notes_are_correct(self):
+        self.assertEqual(label("open-tickets", "none",
+            "T-77: Invoice mismatch [open]\nT-81: Add second seat - high priority"), "correct")
+
+    def test_different_subject_with_status_is_still_wrong(self):
+        self.assertEqual(label("open-tickets", "none",
+            "T-77: Billing error (open)\nT-81: Add second seat (pending)"), "wrong")
+
+    def test_made_up_subject_with_status_is_still_invented(self):
+        self.assertEqual(label("open-tickets", "truncate",
+            "T-77: Billing error (open)"), "invented")
+
+
 if __name__ == "__main__":
     unittest.main()
