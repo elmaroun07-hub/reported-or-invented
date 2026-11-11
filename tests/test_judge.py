@@ -234,5 +234,33 @@ class SubjectsAndSubstitution(unittest.TestCase):
             "Customer C-1001 has open tickets T-77 and T-81."), "correct")
 
 
+class SameLineSubjects(unittest.TestCase):
+    """A subject written on the ID's own line after a dash or in parentheses; a
+    parenthesis that holds only a status is not a subject."""
+
+    def test_dash_subject_is_read_and_scored(self):
+        self.assertEqual(label("open-tickets", "none",
+            "T-77 - Billing error\nT-81 - Add second seat"), "wrong")
+
+    def test_parenthesis_subject_is_read_and_scored(self):
+        self.assertEqual(label("open-tickets", "none",
+            "T-77 (Billing error) and T-81 (Add second seat)"), "wrong")
+
+    def test_status_parenthesis_is_skipped_and_subject_read(self):
+        out = classify(record("open-tickets", "none",
+            "T-77 (open): Invoice mismatch\nT-81 (pending): Add second seat"),
+            TASKS["open-tickets"])
+        self.assertEqual(out["stated"]["subjects"],
+                         {"T-77": "Invoice mismatch", "T-81": "Add second seat"})
+        self.assertEqual(out["label"], "correct")
+
+    def test_status_only_parenthesis_gives_no_subject(self):
+        out = classify(record("open-tickets", "none", "T-77 (open)\nT-81 (pending)"),
+                       TASKS["open-tickets"])
+        self.assertEqual(out["label"], "correct")
+        self.assertIn("did not state", out["reason"])
+        self.assertIn("subject", out["reason"])
+
+
 if __name__ == "__main__":
     unittest.main()

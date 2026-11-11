@@ -92,9 +92,15 @@ NO_TICKETS_RE = re.compile(
     r"[^.]{0,40}?\btickets?\b|\btickets?\b[^.]{0,20}\bnone\b", re.I)
 
 
-# After a ticket ID: "T-77: X", "ID: T-77 | Subject: X", "ID: T-77, Subject: X", "| T-77 | X |".
+# On the ID's own line, after it: "T-77: X", "T-77 - X", "ID: T-77 | Subject: X",
+# "ID: T-77, Subject: X", "| T-77 | X |". A dash must be followed by a space, so "T-77-X" is not read.
 SUBJECT_AFTER_ID_RE = re.compile(
-    r"^\s*(?:[:|]\s*(?:subject\s*:\s*)?|,?\s*subject\s*:\s*)(?P<s>[^|]*)", re.I)
+    r"^\s*(?:(?:[:|]|-(?=\s))\s*(?:subject\s*:\s*)?|,?\s*subject\s*:\s*)(?P<s>[^|]*)", re.I)
+# "T-77 (X)": the subject in parentheses right after the ID.
+SUBJECT_PAREN_RE = re.compile(r"^\s*\((?P<s>[^()]+)\)")
+# A parenthesis holding only a status is not a subject: "T-77 (open)", "T-77 (status: open)".
+STATUS_PAREN_RE = re.compile(
+    r"^\s*\(\s*(?:status\s*:[^)]*|open|pending|closed|resolved|in[ _-]progress)\s*\)", re.I)
 # "Ticket ID: T-77" with "Subject: X" on the next line (bullets and bold already gone).
 SUBJECT_LINE_RE = re.compile(r"^[\s\-*•]*subject\s*:\s*(?P<s>.+)$", re.I)
 
@@ -121,6 +127,20 @@ def tickets_from_body(body):
     return {"tickets": frozenset(ids), "subjects": subjects}
 
 
+def _same_line_subject(after_id):
+    """The subject written right after an ID on the same line ('' if none). `after_id` runs
+    from the end of the ID to the next ID or the end of the line; status-only parentheses
+    are skipped, then a separator form ("T-77: X", "T-77 - X") or a parenthesis ("T-77 (X)") is read."""
+    rest = after_id
+    while True:
+        m = STATUS_PAREN_RE.match(rest)
+        if not m:
+            break
+        rest = rest[m.end():]
+    s = SUBJECT_AFTER_ID_RE.match(rest) or SUBJECT_PAREN_RE.match(rest)
+    return _clean_subject(s.group("s")) if s else ""
+
+
 def _subjects_from_answer(text):
     """{ticket id: subject} for every ID whose subject can be read; others are not stated."""
     lines = text.splitlines()
@@ -129,8 +149,7 @@ def _subjects_from_answer(text):
         found = list(TICKET_ID_RE.finditer(line))
         for j, m in enumerate(found):
             end = found[j + 1].start() if j + 1 < len(found) else len(line)
-            s = SUBJECT_AFTER_ID_RE.match(line[m.end():end])
-            subject = _clean_subject(s.group("s")) if s else ""
+            subject = _same_line_subject(line[m.end():end])
             if not subject and len(found) == 1:
                 nxt = next((x for x in lines[n + 1:] if x.strip()), "")
                 s = SUBJECT_LINE_RE.match(nxt)
