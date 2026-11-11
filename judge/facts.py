@@ -92,20 +92,60 @@ NO_TICKETS_RE = re.compile(
     r"[^.]{0,40}?\btickets?\b|\btickets?\b[^.]{0,20}\bnone\b", re.I)
 
 
+# After a ticket ID: "T-77: X", "ID: T-77 | Subject: X", "ID: T-77, Subject: X", "| T-77 | X |".
+SUBJECT_AFTER_ID_RE = re.compile(
+    r"^\s*(?:[:|]\s*(?:subject\s*:\s*)?|,?\s*subject\s*:\s*)(?P<s>[^|]*)", re.I)
+# "Ticket ID: T-77" with "Subject: X" on the next line (bullets and bold already gone).
+SUBJECT_LINE_RE = re.compile(r"^[\s\-*•]*subject\s*:\s*(?P<s>.+)$", re.I)
+
+
+def _clean_subject(s):
+    s = s.strip().strip(" ,;|").strip().strip("\"'").strip()
+    return s.rstrip(".").strip()
+
+
+def subject_key(s):
+    """How two subjects are compared: case-insensitive, trimmed, no quotes, no trailing period."""
+    return _clean_subject(s).lower()
+
+
 def tickets_from_body(body):
     if not isinstance(body, dict) or not isinstance(body.get("open_tickets"), list):
-        return {"tickets": UNKNOWN}
-    ids = [t.get("id") if isinstance(t, dict) else None for t in body["open_tickets"]]
+        return {"tickets": UNKNOWN, "subjects": UNKNOWN}
+    items = [t if isinstance(t, dict) else {} for t in body["open_tickets"]]
+    ids = [t.get("id") for t in items]
+    subjects = {t["id"]: t["subject"] for t in items
+                if isinstance(t.get("id"), str) and isinstance(t.get("subject"), str)}
     if not all(isinstance(i, str) for i in ids):
-        return {"tickets": UNKNOWN}
-    return {"tickets": frozenset(ids)}
+        return {"tickets": UNKNOWN, "subjects": subjects}
+    return {"tickets": frozenset(ids), "subjects": subjects}
+
+
+def _subjects_from_answer(text):
+    """{ticket id: subject} for every ID whose subject can be read; others are not stated."""
+    lines = text.splitlines()
+    subjects = {}
+    for n, line in enumerate(lines):
+        found = list(TICKET_ID_RE.finditer(line))
+        for j, m in enumerate(found):
+            end = found[j + 1].start() if j + 1 < len(found) else len(line)
+            s = SUBJECT_AFTER_ID_RE.match(line[m.end():end])
+            subject = _clean_subject(s.group("s")) if s else ""
+            if not subject and len(found) == 1:
+                nxt = next((x for x in lines[n + 1:] if x.strip()), "")
+                s = SUBJECT_LINE_RE.match(nxt)
+                subject = _clean_subject(s.group("s")) if s else ""
+            if subject and m.group() not in subjects:
+                subjects[m.group()] = subject
+    return subjects
 
 
 def tickets_from_answer(text):
     text = normalize(text)
     ids = frozenset(TICKET_ID_RE.findall(text))
     if ids:
-        return {"tickets": ids}
+        subjects = _subjects_from_answer(text)
+        return {"tickets": ids, **({"subjects": subjects} if subjects else {})}
     if NO_TICKETS_RE.search(text):
         return {"tickets": frozenset()}
     return {}
@@ -178,6 +218,8 @@ TOLERANCE = {"total": 0.01, "error_rate": 1e-4, "p95_ms": 0.5}
 def same(key, a, b):
     if a == UNKNOWN or b == UNKNOWN:
         return False
+    if key == "subjects":   # every stated subject matches that ticket's subject in b
+        return all(i in b and subject_key(s) == subject_key(b[i]) for i, s in a.items())
     if key in TOLERANCE and _is_num(a) and _is_num(b):
         return abs(a - b) <= TOLERANCE[key]
     return a == b

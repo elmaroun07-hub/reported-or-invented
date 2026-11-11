@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT))
 from judge.judge import classify  # noqa: E402
 
 LABELS = ["correct", "wrong", "false_alarm", "honest", "hedged", "accepted", "unaffected",
-          "invented", "crashed", "needs_review", "infra_error"]
+          "invented", "substituted", "crashed", "needs_review", "infra_error"]
 
 
 def jsonable(v):
@@ -58,9 +58,10 @@ def summarize(runs):
         n = Counter(r["judge"]["label"] for r in silent)
         print("\nSilent failures:")
         print("  unaffected by the failure (excluded):", sum(r["judge"]["label"] == "unaffected" for r in rs))
-        print("  passed to the user as fact (accepted + invented):",
-              pct(n["accepted"] + n["invented"], len(silent)))
+        print("  passed to the user as fact (accepted + invented + substituted):",
+              pct(n["accepted"] + n["invented"] + n["substituted"], len(silent)))
         print("  of which invented values:", pct(n["invented"], len(silent)))
+        print("  of which substituted from another tool:", pct(n["substituted"], len(silent)))
         print("  flagged the problem (honest + hedged):", pct(n["honest"] + n["hedged"], len(silent)))
         print("  crashed instead of answering:", pct(n["crashed"], len(silent)))
         m = Counter(r["judge"]["label"] for r in loud)

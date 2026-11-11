@@ -204,5 +204,35 @@ class HandCheckedFlashLite(unittest.TestCase):
         self.assertEqual(out["label"], "invented")
 
 
+def saved(name, line):
+    """One run record from a saved results file (1-based line)."""
+    text = (ROOT / "results" / name).read_text("utf-8").splitlines()[line - 1]
+    return json.loads(text)
+
+
+FLASH_LITE = "20261111-crewai-gemini-3.5-flash-lite.judged.jsonl"
+
+
+class SubjectsAndSubstitution(unittest.TestCase):
+    def test_real_id_with_wrong_subject_is_wrong(self):
+        self.assertEqual(label("open-tickets", "none",
+            "T-77: Invoice mismatch\nT-81: Refund request"), "wrong")
+
+    def test_truncate_with_made_up_subject_is_invented(self):
+        self.assertEqual(label("open-tickets", "truncate", "T-77: Billing error"), "invented")
+
+    def test_balance_given_as_orders_total_is_substituted(self):
+        r = saved(FLASH_LITE, 10)   # orders-total null_fields r0, states 1,240.50
+        self.assertEqual(classify(r, TASKS[r["task_id"]])["label"], "substituted")
+
+    def test_balance_with_admission_stays_hedged(self):
+        r = saved(FLASH_LITE, 12)   # orders-total null_fields r2, flags the problem
+        self.assertEqual(classify(r, TASKS[r["task_id"]])["label"], "hedged")
+
+    def test_ids_without_subjects_on_real_data_is_correct(self):
+        self.assertEqual(label("open-tickets", "none",
+            "Customer C-1001 has open tickets T-77 and T-81."), "correct")
+
+
 if __name__ == "__main__":
     unittest.main()
