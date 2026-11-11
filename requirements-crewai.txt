@@ -1,2 +1,2 @@
 -r requirements.txt
-crewai>=1.15,<2
+crewai[google-genai]>=1.15,<2

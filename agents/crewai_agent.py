@@ -4,9 +4,10 @@ The agent's instructions are neutral on purpose: nothing tells it how to treat
 a failed or empty tool result, so a run measures the framework + model default,
 not a prompt fix.
 
-Models are given as <provider>/<model>. Every provider goes through crewAI's
-OpenAI-compatible client with an explicit base URL, so all models share one
-client code path:
+Models are given as <provider>/<model>. Groq and OpenRouter go through crewAI's
+OpenAI-compatible client with an explicit base URL. Gemini goes through crewAI's
+native Gemini client (google-genai): Gemini 3 requires the thought signature of
+each tool call to be sent back, and the OpenAI-compatible client drops it (400). Examples:
   groq/openai/gpt-oss-20b        key: GROQ_API_KEY
   openrouter/<org>/<model>       key: OPENROUTER_API_KEY
   gemini/gemini-3.8-flash        key: GEMINI_API_KEY
@@ -70,6 +71,17 @@ def _llm(model: str, temperature: float, task: dict):
     api_key = os.environ.get(key_env)
     if not api_key:
         raise RuntimeError(f"{key_env} is not set; add it to .env")
+    if provider == "gemini":
+        # Native client keeps Gemini 3's thought signatures on tool calls.
+        from google.genai import types  # installed by crewai[google-genai]
+        # Google answers 503 "high demand" / 429 at busy times and the client has no
+        # timeout by default: retry those with backoff and cap each request at 3 min,
+        # so a busy model slows a run down instead of stalling it. A run that still
+        # fails is recorded with the error and judged infra_error (excluded).
+        http = types.HttpOptions(timeout=180_000, retry_options=types.HttpRetryOptions(
+            attempts=6, initial_delay=5, max_delay=60, http_status_codes=[429, 500, 503, 504]))
+        return LLM(model=f"gemini/{name}", api_key=api_key, temperature=temperature,
+                   client_params={"http_options": http})
     return LLM(model=f"openai/{name}", base_url=base_url, api_key=api_key,
                temperature=temperature)
 

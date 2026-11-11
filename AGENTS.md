@@ -23,7 +23,7 @@ Measures whether AI agents report a silent tool failure or invent data to cover 
 
 ## Run
 Agent runs: `python scripts/run.py --framework crewai --model scripted` (plumbing check, no key), then a real model such as `--model groq/openai/gpt-oss-20b`. Keys go in `.env` (copy `.env.example`; gitignored).
-Model ids are `<provider>/<model>` with provider groq, openrouter or gemini; all go through one OpenAI-compatible client.
+Model ids are `<provider>/<model>` with provider groq, openrouter or gemini; groq and openrouter go through one OpenAI-compatible client; gemini goes through crewAI's native Gemini client, which keeps Gemini 3's thought signatures on tool calls.
 
 Proxy runs in reverse mode, so tools call `http://127.0.0.1:8000` and no certificate is needed:
 `mitmdump --mode reverse:http://127.0.0.1:8001 -p 8000 -s inject/addon.py`
