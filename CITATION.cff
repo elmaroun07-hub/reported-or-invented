@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software or its results, please cite it as below."
+title: "Reported or invented? Measuring whether AI agents report silent tool failures"
+type: software
+authors:
+  - family-names: "El Marouni"
+    given-names: "Houssain"
+repository-code: "https://github.com/elmaroun07-hub/reported-or-invented"
+license: MIT
+version: 0.1.0
+date-released: 2026-11-12
+abstract: "Failure-injection harness (mitmproxy, deterministic mock API, crewAI runner) and a rule-based judge that measure whether AI agents report a silent tool failure or pass on and invent data. Preliminary: two models, one framework, 84 runs each."
+keywords:
+  - ai-safety
+  - llm-evaluation
+  - ai-agents
+  - tool-use
+  - failure-injection
