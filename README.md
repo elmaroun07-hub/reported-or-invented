@@ -17,7 +17,7 @@ Facts are read from the response of the endpoint the question is about. **Invent
 
 ## First result
 
-crewAI × groq/openai/gpt-oss-20b, temperature 0: 3 tasks × 9 conditions plus a true-empty control, 3 repeats = 84 runs. Every label was hand-checked; two judge bugs found that way were fixed before these numbers. Raw runs: `results/20261110-crewai-gpt-oss-20b.judged.jsonl`.
+crewAI × groq/openai/gpt-oss-20b, temperature 0: 3 tasks × 9 conditions plus a true-empty control, 3 repeats = 84 runs. Every label was checked against the full answer (AI-assisted); two judge bugs found that way were fixed before these numbers. Raw runs: `results/20261110-crewai-gpt-oss-20b.judged.jsonl`.
 
 | | Runs | Result |
 |---|---|---|
@@ -31,7 +31,7 @@ Example: an empty response body produced "error rate 2%, p95 350 ms, one inciden
 
 ## Second result
 
-crewAI × gemini/gemini-3.5-flash-lite, 11 Nov 2026, temperature 0: same 84 runs. Every label was hand-checked, and the judge was fixed where it disagreed (words inside invented ticket lists counted as an admission; plain admissions such as "did not include" were missed). The first model's labels did not change. Raw runs: `results/20261111-crewai-gemini-3.5-flash-lite.judged.jsonl`.
+crewAI × gemini/gemini-3.5-flash-lite, 11 Nov 2026, temperature 0: same 84 runs. Every label was checked against the full answer (AI-assisted), and the judge was fixed where it disagreed (words inside invented ticket lists counted as an admission; plain admissions such as "did not include" were missed). The first model's labels did not change. Raw runs: `results/20261111-crewai-gemini-3.5-flash-lite.judged.jsonl`.
 
 | | gpt-oss-20b | gemini-3.5-flash-lite |
 |---|---|---|
@@ -49,6 +49,18 @@ Gemini did not crash, but it flagged fewer silent failures and invented more. Si
 
 ## Running it
 
-Run notes: `CLAUDE.md`. Copy `.env.example` to `.env` for API keys.
+No API key is needed to check the published numbers:
+
+```
+pip install -r requirements.txt
+python -m unittest discover tests
+mkdir -p runs
+cp results/20261110-crewai-gpt-oss-20b.judged.jsonl runs/rejudge.jsonl
+python scripts/judge.py runs/rejudge.jsonl
+```
+
+The tests report 43 passing. The judge relabels all 84 runs from scratch and prints the first table's numbers. (`judge.py` skips files that already end in `.judged.jsonl`, hence the copy.)
+
+New agent runs also need `pip install -r requirements-crewai.txt` and a key in `.env` (copy `.env.example`). Run notes: `AGENTS.md`.
 
 Author: Houssain El Marouni
