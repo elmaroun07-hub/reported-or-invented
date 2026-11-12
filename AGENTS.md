@@ -14,7 +14,7 @@ Measures whether AI agents report a silent tool failure or invent data to cover 
 - `scripts/run.py`: runs every task x failure x repeat, one JSON line per run in `runs/<session>-<framework>.jsonl`.
 - `judge/`: rule-based judge, no model in the loop. `facts.py` reads each task's facts from an API body (UNKNOWN when absent) and from an answer; `judge.py` labels a run: correct, wrong, false_alarm, honest, hedged, accepted, unaffected, invented, substituted, crashed, infra_error, needs_review.
 - `scripts/judge.py`: labels runs files, writes `*.judged.jsonl`, prints the summary.
-- `tests/test_judge.py`: 43 tests incl. the first real run's 9 answers and 5 hand-checked Flash-Lite answers; bodies come from the real add-on. `python -m unittest discover tests -v`.
+- `tests/test_judge.py`: 43 tests incl. the first real run's 9 answers and 5 checked Flash-Lite answers; bodies come from the real add-on. `python -m unittest discover tests -v`.
 - `vendor/`: upstream repos cloned shallow for reading only (gitignored).
 
 ## Failure catalog
