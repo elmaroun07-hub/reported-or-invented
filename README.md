@@ -89,4 +89,15 @@ The tests report 57 passing. The judge relabels all 84 runs from scratch and pri
 
 New agent runs also need `pip install -r requirements-crewai.txt` and a key in `.env` (copy `.env.example`). Run notes: `AGENTS.md`.
 
+## Licences and terms
+
+This repository is under the MIT licence (`LICENSE`). Every tool below was installed and run as published, on the author's own machine, against the local mock API in `mock_api/`. Their source code is not copied into this repository (`vendor/` is not committed). Each was used under its own licence or terms, as checked on 14 Nov 2026:
+
+- crewAI, LangGraph, OpenAI Agents SDK, mitmproxy: MIT.
+- Google ADK, smolagents (attempted, not in the table): Apache 2.0.
+- Model `openai/gpt-oss-20b`: Apache 2.0 and the gpt-oss usage policy. Served by Groq under the Groq Services Agreement and Acceptable Use Policy; model outputs belong to the customer (Services Agreement, section 8.1).
+- Model `gemini-3.5-flash-lite`: Gemini API Additional Terms of Service. Only mock data was sent.
+
+None of these licences or terms forbids testing the software or publishing the results. This is a summary, not legal advice; the licence and terms of each project govern.
+
 Author: Houssain El Marouni
