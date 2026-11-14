@@ -12,6 +12,7 @@ import argparse
 import importlib
 import importlib.util
 import json
+import os
 import sys
 import time
 import uuid
@@ -35,7 +36,7 @@ def main():
     sys.stdout.reconfigure(errors="replace")
     failures_all, signalled = failure_catalog()
     p = argparse.ArgumentParser()
-    p.add_argument("--framework", required=True, choices=["crewai"])
+    p.add_argument("--framework", required=True, choices=["crewai", "langgraph", "smolagents", "openai_agents", "adk"])
     p.add_argument("--model", required=True)
     p.add_argument("--temperature", type=float, default=0.0)
     p.add_argument("--repeats", type=int, default=1)
@@ -43,9 +44,12 @@ def main():
     p.add_argument("--failures", default="", help=f"comma-separated, from {failures_all}")
     p.add_argument("--max-iter", type=int, default=6)
     p.add_argument("--pause", type=float, default=2.0, help="seconds between runs (rate limits)")
+    p.add_argument("--port-base", type=int, default=8000,
+                   help="proxy port; the mock API uses port-base + 1")
     args = p.parse_args()
 
     load_dotenv(ROOT / ".env")
+    os.environ["ROI_API_BASE"] = f"http://127.0.0.1:{args.port_base}"
     adapter = importlib.import_module(f"agents.{args.framework}_agent")
 
     tasks = json.loads((ROOT / "harness" / "tasks.json").read_text(encoding="utf-8"))
@@ -66,7 +70,8 @@ def main():
 
     errors = 0
     with Services(runs_dir / f"{session}-scenario.json",
-                  runs_dir / f"{session}-injections.jsonl") as svc, \
+                  runs_dir / f"{session}-injections.jsonl",
+                  mock_port=args.port_base + 1, proxy_port=args.port_base) as svc, \
             out_path.open("a", encoding="utf-8") as out:
         for i, (task, failure, rep) in enumerate(plan, 1):
             run_id = f"{task['id']}.{failure}.r{rep}.{uuid.uuid4().hex[:6]}"
