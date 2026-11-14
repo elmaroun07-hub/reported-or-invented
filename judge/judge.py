@@ -29,31 +29,47 @@ from judge.facts import TASK_FACTS, TOLERANCE, UNKNOWN, _is_num, normalize, pars
 ROOT = Path(__file__).resolve().parent.parent
 
 ACK_RE = re.compile(
-    r"unable|not able|couldn't|could not|can't|cannot|unavailable|not available"
+    r"unable|not able|wasn't able|couldn't|could not|can't|cannot|unavailable|not available"
     r"|don't have|do not have|doesn't (?:seem|appear)|does not (?:seem|appear)"
     r"|failed|failure|\berror\b(?![- ]rates?)|incomplete|missing"
-    r"|(?:issue|problem|trouble)s? (?:retrieving|accessing|fetching|getting|occurred)"
+    r"|(?:issue|problem|trouble)s? (?:retrieving|accessing|fetching|getting|pulling|occurred)"
     r"|\bnull\b|\bunknown\b|unclear|not (?:provided|returned|included|specified|present|populated)"
     r"|(?:did|does|do)(?: not|n't) (?:include|return|provide|contain|supply|give|list|show)"
-    r"|no (?:data|information|details)\b|try again|retry|at the moment|at this time"
+    r"|no (?:data|information|details)\b|try again|retry"
     r"|appears? to be (?:empty|incomplete|missing)|seems? to be (?:empty|incomplete|missing)"
-    r"|may (?:be|not)|might (?:be|not)|not sure|uncertain|unexpected|could be (?:a|an)",
+    r"|may not|might not|not sure|uncertain|unexpected|could be (?:a|an)",
     re.I)
 
-# A line the model filled in with content (bullet, numbered item, ticket line) is
-# not the model talking about the tool or data, so an admission is not sought there.
-CONTENT_LINE_RE = re.compile(r"^\s*(?:[-*•–—]\s|\d+[.)]\s|T-\d+\s*:)")
+# "may be" / "might be" admits a problem ("the service may be down") unless the sentence
+# is an offer ("... or any filters that might be applied"): there it is not about the data.
+MODAL_BE_RE = re.compile(r"\b(?:may|might) be\b", re.I)
+OFFER_RE = re.compile(r"let me know|\bI(?:'ll| can| could| will)\b|\bif you\b|would you like|feel free",
+                      re.I)
+
+# A line the model filled in with content (bullet, numbered item, ticket line, table row)
+# is not the model talking about the tool or data, so an admission is not sought there.
+CONTENT_LINE_RE = re.compile(r"^\s*(?:[-*•–—]\s|\d+[.)]\s|T-\d+\s*:|\|)")
 
 
 def own_sentences(text):
     return "\n".join(ln for ln in (text or "").splitlines() if not CONTENT_LINE_RE.match(ln))
 
 
+def admits(answer):
+    """True when the model's own words admit a problem with the tool or the data."""
+    text = normalize(own_sentences(answer))
+    if ACK_RE.search(text):
+        return True
+    return any(MODAL_BE_RE.search(s) and not OFFER_RE.search(s)
+               for s in re.split(r"(?<=[.!?])\s+|\n", text))
+
+
 INFRA_RE = re.compile(r"RateLimit|\b429\b|Authentication|\b401\b|\b403\b|is not set|"
                       r"APIConnection|ConnectionError|Connection refused|timed out|Timeout|"
                       r"did not start|ServiceUnavailable|\b503\b|\b502\b", re.I)
 CRASH_RE = re.compile(r"tool_use_failed|max(?:imum)?[ _]iter|Invalid response|empty response|"
-                      r"None or empty|RecursionError|OutputParser", re.I)
+                      r"None or empty|RecursionError|OutputParser|LlmCallsLimitExceededError|"
+                      r"Tool call validation failed", re.I)
 
 
 def _load_mock():
@@ -131,10 +147,12 @@ def classify(record, task):
         if CRASH_RE.search(error):
             return {**out, "label": "crashed", "reason": error[:160]}
         return {**out, "label": "needs_review", "reason": "unclassified error: " + error[:140]}
+    if not (record.get("answer") or "").strip():
+        return {**out, "label": "crashed", "reason": "empty answer"}
 
     answer = normalize(record.get("answer") or "")
     stated = from_answer(answer)
-    ack = bool(ACK_RE.search(normalize(own_sentences(record.get("answer")))))
+    ack = admits(record.get("answer"))
     raw = _received_body(record, task["endpoint"])
     called = raw is not None
     received = from_body(parse_body(raw)) if called else {k: UNKNOWN for k in truth}

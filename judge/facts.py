@@ -55,7 +55,7 @@ def _word_or_int(s):
 
 COUNT_RE = re.compile(
     r"(?<![-\w.])(\d+|no|zero|one|two|three|four|five|a single|single)\s+"
-    r"(?:[A-Za-z-]+\s+){0,2}?orders?\b", re.I)
+    r"(?:[A-Za-z-]+\s+){0,2}?orders?\b(?!\s+(?:information|data|details)\b)", re.I)
 COUNT_COLON_RE = re.compile(r"orders?\s*[:=]\s*(\d+)\b", re.I)
 MONEY_RE = re.compile(r"€\s*(\d[\d.,]*)|(\d[\d.,]*)\s*(?:€|eur\b|euros?\b)", re.I)
 
