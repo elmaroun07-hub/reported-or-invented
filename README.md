@@ -85,7 +85,7 @@ cp results/20261110-crewai-gpt-oss-20b.judged.jsonl runs/rejudge.jsonl
 python scripts/judge.py runs/rejudge.jsonl
 ```
 
-The tests report 43 passing. The judge relabels all 84 runs from scratch and prints the first table's numbers. (`judge.py` skips files that already end in `.judged.jsonl`, hence the copy.)
+The tests report 57 passing. The judge relabels all 84 runs from scratch and prints the first table's numbers. (`judge.py` skips files that already end in `.judged.jsonl`, hence the copy.)
 
 New agent runs also need `pip install -r requirements-crewai.txt` and a key in `.env` (copy `.env.example`). Run notes: `AGENTS.md`.
 
