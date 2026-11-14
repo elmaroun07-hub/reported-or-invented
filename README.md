@@ -17,7 +17,7 @@ Facts are read from the response of the endpoint the question is about. **Invent
 
 ## First result
 
-crewAI × groq/openai/gpt-oss-20b, temperature 0: 3 tasks × 9 conditions plus a true-empty control, 3 repeats = 84 runs. Every label was checked against the full answer (AI-assisted); two judge bugs found that way were fixed before these numbers. Raw runs: `results/20261110-crewai-gpt-oss-20b.judged.jsonl`.
+crewAI × groq/openai/gpt-oss-20b, temperature 0: 3 tasks × 9 conditions plus a true-empty control, 3 repeats = 84 runs. Every label was checked against the full answer (AI-assisted); two judge bugs found that way were fixed before these numbers. Raw runs: `results/20261110-crewai-gpt-oss-20b.judged.jsonl`. The harness, the framework adapters, the judge code and this README were written with AI coding assistants (Claude Code and OpenAI Codex), under the author's direction.
 
 | | Runs | Result |
 |---|---|---|
@@ -66,7 +66,7 @@ The crewAI row is from 10 Nov 2026; the other three are from 14 Nov 2026. The nu
 
 - crewAI adds its own task line: "expected output: A direct answer to the question."
 - LangGraph runs through `langchain.agents.create_agent`.
-- Google ADK prepends its own "You are an agent..." line, and the adapter drops replayed reasoning parts because Groq rejects them.
+- Google ADK prepends its own "You are an agent..." line. The adapter also adds a `before_model_callback` that drops replayed reasoning parts from the history, because Groq rejects them. This is a change from stock ADK.
 - The OpenAI Agents SDK adapter sends role, goal and backstory as three plain lines, while LangGraph and Google ADK use the "You are ... Your personal goal is: ..." framing.
 - "Crashed" covers loop caps, tool calls the provider rejected, and one empty answer.
 - One LangGraph run and one Google ADK run hit a rate limit and were re-run individually. The [LangGraph raw file](results/20261114-langgraph-gpt-oss-20b.jsonl) and [Google ADK raw file](results/20261114-adk-gpt-oss-20b.jsonl) each contain a second session ID.
