@@ -29,7 +29,7 @@ Proxy runs in reverse mode, so tools call `http://127.0.0.1:8000` and no certifi
 `mitmdump --mode reverse:http://127.0.0.1:8001 -p 8000 -s inject/addon.py`
 
 ## Environment
-Windows, Git Bash, Python 3.12, venv in `.venv/`. crewAI: `pip install -r requirements-crewai.txt`; telemetry and tracing are switched off in the adapter.
+Windows, Git Bash, Python 3.12, venv in `.venv/`. Install the requirements for the adapter being used: crewAI (`pip install -r requirements-crewai.txt`), LangGraph (`pip install -r requirements-langgraph.txt`), Google ADK (`pip install -r requirements-adk.txt`) or OpenAI Agents SDK (`pip install -r requirements-openai_agents.txt`). Telemetry and tracing are switched off in all four adapters.
 
 ## Framework order
-crewAI first, then smolagents, LangGraph, OpenAI Agents SDK.
+crewAI, then LangGraph, Google ADK, OpenAI Agents SDK.

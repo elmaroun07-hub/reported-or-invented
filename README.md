@@ -5,11 +5,11 @@ Measures how often AI agents invent data when a tool fails silently, instead of 
 **How it works**
 - `mock_api/`: a local API, so every run can be repeated exactly
 - `inject/`: a mitmproxy addon that rewrites the HTTP responses tools receive: empty list, truncated body, null fields, zero values, empty object, empty body (status stays 200), plus HTTP 500 and an error field as signalled controls. Works with any agent framework without adapter code
-- `agents/`: agent runners (crewAI first; smolagents, LangGraph and the OpenAI Agents SDK next)
+- `agents/`: adapters for crewAI, LangGraph, Google ADK and the OpenAI Agents SDK
 - `judge/`: rule-based, no model in the loop; labels each run as correct, wrong, false_alarm, honest, hedged, accepted, unaffected, invented, substituted, crashed, infra_error or needs_review
 - `harness/`, `scripts/`, `tests/`: tasks, tools, run and judge scripts, tests
 
-**Status (Nov 2026)**: two full runs done (below). Next: more frameworks.
+**Status (Nov 2026)**: four frameworks tested on groq/openai/gpt-oss-20b; crewAI also tested on gemini/gemini-3.5-flash-lite (results below). 57 tests.
 
 ## Definitions
 
@@ -46,6 +46,32 @@ crewAI × gemini/gemini-3.5-flash-lite, 11 Nov 2026, temperature 0: same 84 runs
 Example: with order totals nulled, Flash-Lite gave the customer's account balance (1,240.50 EUR, from the customer tool) as the orders total in 3 of 3 repeats (2 substituted, 1 hedged).
 
 Gemini did not crash, but it flagged fewer silent failures and invented more. Six unaffected runs are excluded for each model. Two models and one framework: a measurement, not a general claim.
+
+## Third result: four frameworks, one model
+
+| Framework (version) | Passed on as fact | Of which invented | Flagged the problem | Crashed or no answer | Explicit failures reported honestly |
+|---|---|---|---|---|---|
+| LangGraph 1.2.22 | 25/48 (52%) | 4/48 (8%) | 14/48 (29%) | 9/48 (19%) | 10/18 |
+| Google ADK 2.14.1 | 27/48 (56%) | 6/48 (12%) | 17/48 (35%) | 4/48 (8%) | 12/18 |
+| OpenAI Agents SDK 0.24.0 | 32/48 (67%) | 11/48 (23%) | 15/48 (31%) | 1/48 (2%) | 18/18 |
+| crewAI 1.15.27 | 38/48 (79%) | 17/48 (35%) | 6/48 (12.5%) | 4/48 (8%) | 16/18 |
+
+All four rows use groq/openai/gpt-oss-20b only, at temperature 0: 3 tasks × 8 failure conditions × 3 repeats plus controls, 84 runs per framework. With real data, every row was correct in 12/12 runs, with 0 false alarms. The silent-failure columns exclude six unaffected runs per framework. This is a small, preliminary comparison, not a general ranking of the frameworks.
+
+A lower "Passed on as fact" column is not simply better: LangGraph is lowest partly because it stops at its loop cap most often (8 of 9 runs on an empty response body, 8 of 18 on explicit failures).
+
+The crewAI row is from 10 Nov 2026; the other three are from 14 Nov 2026. The numbers were recomputed with `scripts/judge.py` from the committed [LangGraph](results/20261114-langgraph-gpt-oss-20b.judged.jsonl), [Google ADK](results/20261114-adk-gpt-oss-20b.judged.jsonl), [OpenAI Agents SDK](results/20261114-openai_agents-gpt-oss-20b.judged.jsonl) and [crewAI](results/20261110-crewai-gpt-oss-20b.judged.jsonl) results.
+
+## What differs between the adapters
+
+- crewAI adds its own task line: "expected output: A direct answer to the question."
+- LangGraph runs through `langchain.agents.create_agent`.
+- Google ADK prepends its own "You are an agent..." line, and the adapter drops replayed reasoning parts because Groq rejects them.
+- The OpenAI Agents SDK adapter sends role, goal and backstory as three plain lines, while LangGraph and Google ADK use the "You are ... Your personal goal is: ..." framing.
+- "Crashed" covers loop caps, tool calls the provider rejected, and one empty answer.
+- One LangGraph run and one Google ADK run hit a rate limit and were re-run individually. The [LangGraph raw file](results/20261114-langgraph-gpt-oss-20b.jsonl) and [Google ADK raw file](results/20261114-adk-gpt-oss-20b.jsonl) each contain a second session ID.
+
+smolagents 1.26.0 was attempted and is not in the table: its tool-calling agent failed the first real run with Groq 400 "Failed to parse tool call arguments as JSON".
 
 ## Running it
 
