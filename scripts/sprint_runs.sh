@@ -4,11 +4,74 @@ set -uo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd) || exit 1
 cd -- "$ROOT" || exit 1
+
+python_for() {
+    case "$1" in
+        crewai) printf '%s\n' './.venv/Scripts/python' ;;
+        langgraph|adk) printf '%s\n' "$HOME/roi-claude/.venv/Scripts/python" ;;
+        openai_agents) printf '%s\n' "$HOME/roi-codex/.venv/Scripts/python" ;;
+    esac
+}
+
+preflight() {
+    local fw python
+    for fw in crewai langgraph openai_agents adk; do
+        python=$(python_for "$fw")
+        if [[ ! -x "$python" && ! -x "$python.exe" ]]; then
+            printf 'PREFLIGHT FAILED: %s Python not found: %s\n' "$fw" "$python" >&2
+            return 1
+        fi
+        "$python" -B - "$fw" <<'PY' || return 1
+import importlib
+import sys
+from importlib.metadata import version
+
+framework = sys.argv[1]
+try:
+    # Import this repo's adapter: it imports the framework and handles the
+    # local agents package's name collision with the OpenAI Agents SDK.
+    adapter = importlib.import_module(f"agents.{framework}_agent")
+    import mitmproxy
+    print(f"OK {framework} {adapter.VERSION}; mitmproxy {version('mitmproxy')}; python={sys.executable}")
+except Exception as exc:
+    print(f"PREFLIGHT FAILED: {framework} with {sys.executable}: {type(exc).__name__}: {exc}", file=sys.stderr)
+    sys.exit(1)
+PY
+    done
+    ./.venv/Scripts/python -B - <<'PY' || return 1
+import socket
+import sys
+
+sockets = []
+try:
+    for port in (8000, 8001):
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sockets.append(listener)
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        listener.bind(("127.0.0.1", port))
+    print("OK ports 8000 and 8001 are free on 127.0.0.1")
+except OSError as exc:
+    print(f"PREFLIGHT FAILED: port {port} is unavailable: {exc}", file=sys.stderr)
+    sys.exit(1)
+finally:
+    for listener in sockets:
+        listener.close()
+PY
+    echo 'PREFLIGHT PASSED'
+}
+
+if [[ "${1:-}" == "--preflight-only" ]]; then
+    preflight
+    exit $?
+fi
+
 mkdir -p runs || exit 1
 exec > >(tee -a "$ROOT/runs/sprint-console.log") 2>&1
 export PYTHONUNBUFFERED=1
 source "$ROOT/.venv/Scripts/activate" || exit 1
 printf 'Sprint started %s\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+preflight || exit 1
 
 # Keep the execution-state request on a live PowerShell thread for the batch.
 # The marker lets EXIT/INT/TERM cleanup ask that thread to release it normally.
@@ -63,7 +126,7 @@ for fw in crewai langgraph openai_agents adk; do
     for v in prompt flag; do
         printf '\n== Starting %s / %s ==\n' "$fw" "$v"
         set_log=$(mktemp "$ROOT/runs/sprint-${fw}-${v}.XXXXXX.log") || exit 1
-        python scripts/run.py --framework "$fw" --model groq/openai/gpt-oss-20b \
+        "$(python_for "$fw")" scripts/run.py --framework "$fw" --model groq/openai/gpt-oss-20b \
             --repeats 3 --pause 4 --variant "$v" 2>&1 | tee "$set_log"
         run_status=${PIPESTATUS[0]}
 
@@ -74,7 +137,7 @@ for fw in crewai langgraph openai_agents adk; do
         }' "$set_log")
         judge_status=1
         if [[ "$run_file" == runs/*-"$fw"-"$v".jsonl && -s "$run_file" ]]; then
-            python scripts/judge.py "$run_file"
+            ./.venv/Scripts/python scripts/judge.py "$run_file"
             judge_status=$?
         else
             echo "No nonempty run file from this set; skipping its judge."
