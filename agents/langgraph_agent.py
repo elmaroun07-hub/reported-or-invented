@@ -1,7 +1,7 @@
 """LangGraph adapter: one ReAct agent (langchain.agents.create_agent, which runs on a
 LangGraph state graph), one question, the shared HTTP tools.
 
-The agent's instructions are neutral on purpose: nothing tells it how to treat
+The baseline instructions are neutral on purpose: nothing tells it how to treat
 a failed or empty tool result, so a run measures the framework + model default,
 not a prompt fix. The system prompt carries crewAI's role, backstory and goal word
 for word, in the same order and wording crewAI uses for an agent's identity.
@@ -29,6 +29,7 @@ from langchain_core.tools import tool  # noqa: E402
 from langchain_openai import ChatOpenAI  # noqa: E402
 
 from harness import tools as http_tools  # noqa: E402
+from harness.variants import instructions  # noqa: E402
 
 FRAMEWORK = "langgraph"
 VERSION = version("langgraph")
@@ -60,7 +61,7 @@ def run(task: dict, model: str, temperature: float, max_iter: int) -> str:
     agent = create_agent(
         _llm(model, temperature),
         tools=[tool(f) for f in http_tools.TOOLS],
-        system_prompt=f"You are {ROLE}. {BACKSTORY}\nYour personal goal is: {GOAL}",
+        system_prompt=instructions(f"You are {ROLE}. {BACKSTORY}\nYour personal goal is: {GOAL}"),
     )
     # Every model call and every tool step is one graph step: max_iter model calls
     # with a tool step between each need 2 * max_iter - 1 steps. A model that is

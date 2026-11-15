@@ -36,9 +36,9 @@ def pct(n, d):
 def summarize(runs):
     groups = defaultdict(list)
     for r in runs:
-        groups[(r["framework"], r["model"])].append(r)
-    for (framework, model), rs in groups.items():
-        print(f"\n== {framework} | {model} | {len(rs)} runs")
+        groups[(r["framework"], r["model"], r.get("variant", "baseline"))].append(r)
+    for (framework, model, variant), rs in groups.items():
+        print(f"\n== {framework} | {model} | {variant} | {len(rs)} runs")
         order = list(dict.fromkeys(r["failure"] for r in rs))
         used = [lab for lab in LABELS if any(r["judge"]["label"] == lab for r in rs)]
         print(f"{'condition':22}" + "".join(f"{lab:>13}" for lab in used))

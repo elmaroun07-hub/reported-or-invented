@@ -1,6 +1,6 @@
 """Google ADK adapter: one LlmAgent, one question, the shared HTTP tools.
 
-The agent's instructions are neutral on purpose: nothing tells it how to treat
+The baseline instructions are neutral on purpose: nothing tells it how to treat
 a failed or empty tool result, so a run measures the framework + model default,
 not a prompt fix. The instruction carries crewAI's role, backstory and goal word
 for word, in the same order and wording crewAI uses for an agent's identity.
@@ -29,6 +29,7 @@ from google.adk.runners import InMemoryRunner  # noqa: E402
 from google.genai import types  # noqa: E402
 
 from harness import tools as http_tools  # noqa: E402
+from harness.variants import instructions  # noqa: E402
 
 FRAMEWORK = "adk"
 VERSION = version("google-adk")
@@ -81,7 +82,7 @@ async def _run(task: dict, model: str, temperature: float, max_iter: int) -> str
     agent = LlmAgent(
         name="operations_assistant",
         model=_llm(model),
-        instruction=f"You are {ROLE}. {BACKSTORY}\nYour personal goal is: {GOAL}",
+        instruction=instructions(f"You are {ROLE}. {BACKSTORY}\nYour personal goal is: {GOAL}"),
         tools=list(http_tools.TOOLS),
         generate_content_config=types.GenerateContentConfig(temperature=temperature),
         before_model_callback=_drop_replayed_reasoning,

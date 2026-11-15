@@ -23,6 +23,7 @@ from agents.tracing import set_tracing_disabled  # noqa: E402
 from openai import AsyncOpenAI  # noqa: E402
 
 from harness import tools as http_tools  # noqa: E402
+from harness.variants import instructions  # noqa: E402
 
 set_tracing_disabled(True)
 
@@ -56,7 +57,7 @@ def run(task: dict, model: str, temperature: float, max_iter: int) -> str:
         async with AsyncOpenAI(api_key=api_key, base_url=base_url, timeout=180.0) as client:
             agent = Agent(
                 name=ROLE,
-                instructions=f"{ROLE}\n{GOAL}\n{BACKSTORY}",
+                instructions=instructions(f"{ROLE}\n{GOAL}\n{BACKSTORY}"),
                 tools=[function_tool(f, failure_error_function=None) for f in http_tools.TOOLS],
                 model=OpenAIChatCompletionsModel(model=name, openai_client=client),
                 model_settings=ModelSettings(temperature=temperature),

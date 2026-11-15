@@ -9,7 +9,7 @@ Measures how often AI agents invent data when a tool fails silently, instead of 
 - `judge/`: rule-based, no model in the loop; labels each run as correct, wrong, false_alarm, honest, hedged, accepted, unaffected, invented, substituted, crashed, infra_error or needs_review
 - `harness/`, `scripts/`, `tests/`: tasks, tools, run and judge scripts, tests
 
-**Status (Nov 2026)**: four frameworks tested on groq/openai/gpt-oss-20b; crewAI also tested on gemini/gemini-3.5-flash-lite (results below). 57 tests.
+**Status (Nov 2026)**: four frameworks tested on groq/openai/gpt-oss-20b; crewAI also tested on gemini/gemini-3.5-flash-lite (results below). 79 tests.
 
 ## Definitions
 
@@ -85,9 +85,11 @@ cp results/20261110-crewai-gpt-oss-20b.judged.jsonl runs/rejudge.jsonl
 python scripts/judge.py runs/rejudge.jsonl
 ```
 
-The tests report 57 passing. The judge relabels all 84 runs from scratch and prints the first table's numbers. (`judge.py` skips files that already end in `.judged.jsonl`, hence the copy.)
+The tests report 79 passing (57 judge tests and 22 variant tests). The judge relabels all 84 runs from scratch and prints the first table's numbers. (`judge.py` skips files that already end in `.judged.jsonl`, hence the copy.)
 
 New agent runs also need `pip install -r requirements-crewai.txt` and a key in `.env` (copy `.env.example`). Run notes: `AGENTS.md`.
+
+The [epistemics sprint plan](experiments/epistemics-sprint/PLAN.md) compares two interventions against the pre-existing baseline. `scripts/run.py --variant baseline|prompt|flag` defaults to baseline. Prompt adds one instruction sentence; flag appends a descriptive note for empty or unreadable bodies, empty containers and nulls. It cannot detect plausible zero values or shortened lists, and also flags genuinely empty data. Each run records its variant and both the raw API body (`sent_body`, used by the unchanged judge) and the text returned to the model (`returned_body`). Non-baseline filenames end in `-prompt.jsonl` or `-flag.jsonl`; judge summaries separate variants.
 
 ## Licences and terms
 

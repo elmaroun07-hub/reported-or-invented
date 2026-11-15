@@ -1,6 +1,6 @@
 """crewAI adapter: one agent, one task, the shared HTTP tools.
 
-The agent's instructions are neutral on purpose: nothing tells it how to treat
+The baseline instructions are neutral on purpose: nothing tells it how to treat
 a failed or empty tool result, so a run measures the framework + model default,
 not a prompt fix.
 
@@ -27,6 +27,7 @@ from crewai.llms.base_llm import BaseLLM  # noqa: E402
 from crewai.tools import tool  # noqa: E402
 
 from harness import tools as http_tools  # noqa: E402
+from harness.variants import instructions  # noqa: E402
 
 FRAMEWORK = "crewai"
 VERSION = crewai.__version__
@@ -88,7 +89,7 @@ def _llm(model: str, temperature: float, task: dict):
 
 def run(task: dict, model: str, temperature: float, max_iter: int) -> str:
     agent = Agent(
-        role=ROLE, goal=GOAL, backstory=BACKSTORY,
+        role=ROLE, goal=GOAL, backstory=instructions(BACKSTORY),
         tools=[tool(f.__name__)(f) for f in http_tools.TOOLS],
         llm=_llm(model, temperature, task),
         max_iter=max_iter, allow_delegation=False, verbose=False,

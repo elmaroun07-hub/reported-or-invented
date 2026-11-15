@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 
 from harness.env import load_dotenv  # noqa: E402
 from harness.services import Services  # noqa: E402
+from harness.tools import tool_output  # noqa: E402
 
 
 def failure_catalog():
@@ -38,6 +39,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--framework", required=True, choices=["crewai", "langgraph", "smolagents", "openai_agents", "adk"])
     p.add_argument("--model", required=True)
+    p.add_argument("--variant", choices=["baseline", "prompt", "flag"], default="baseline")
     p.add_argument("--temperature", type=float, default=0.0)
     p.add_argument("--repeats", type=int, default=1)
     p.add_argument("--tasks", default="", help="comma-separated task ids (default: all)")
@@ -50,6 +52,7 @@ def main():
 
     load_dotenv(ROOT / ".env")
     os.environ["ROI_API_BASE"] = f"http://127.0.0.1:{args.port_base}"
+    os.environ["ROI_VARIANT"] = args.variant
     adapter = importlib.import_module(f"agents.{args.framework}_agent")
 
     tasks = json.loads((ROOT / "harness" / "tasks.json").read_text(encoding="utf-8"))
@@ -63,7 +66,8 @@ def main():
 
     session = time.strftime("%Y%m%d-%H%M%S")
     runs_dir = ROOT / "runs"
-    out_path = runs_dir / f"{session}-{args.framework}.jsonl"
+    suffix = "" if args.variant == "baseline" else f"-{args.variant}"
+    out_path = runs_dir / f"{session}-{args.framework}{suffix}.jsonl"
     plan = [(t, f, r) for t in tasks for f in t.get("failures", failures)
             for r in range(args.repeats)]
     print(f"{len(plan)} runs -> {out_path.relative_to(ROOT)}")
@@ -91,6 +95,7 @@ def main():
                 "run_id": run_id,
                 "session": session,
                 "framework": args.framework,
+                "variant": args.variant,
                 "framework_version": adapter.VERSION,
                 "model": args.model,
                 "temperature": args.temperature,
@@ -104,8 +109,9 @@ def main():
                 "error": error,
                 "duration_s": round(time.time() - started, 2),
                 "called_target": any(c["rule_path"] == task["endpoint"] for c in calls),
-                "tool_calls": [{k: c[k] for k in ("url", "failure", "outcome",
-                                                  "sent_status", "sent_body")}
+                "tool_calls": [{**{k: c[k] for k in ("url", "failure", "outcome",
+                                                    "sent_status", "sent_body")},
+                                "returned_body": tool_output(c["sent_body"])}
                                for c in calls],
             }
             out.write(json.dumps(record) + "\n")
