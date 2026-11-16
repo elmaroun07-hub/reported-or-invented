@@ -89,7 +89,7 @@ The tests report 79 passing (57 judge tests and 22 variant tests). The judge rel
 
 New agent runs also need `pip install -r requirements-crewai.txt` and a key in `.env` (copy `.env.example`). Run notes: `AGENTS.md`.
 
-The [epistemics sprint plan](experiments/epistemics-sprint/PLAN.md) compares two interventions against the pre-existing baseline. `scripts/run.py --variant baseline|prompt|flag` defaults to baseline. Prompt adds one instruction sentence; flag appends a descriptive note for empty or unreadable bodies, empty containers and nulls. It cannot detect plausible zero values or shortened lists, and also flags genuinely empty data. Each run records its variant and both the raw API body (`sent_body`, used by the unchanged judge) and the text returned to the model (`returned_body`). Non-baseline filenames end in `-prompt.jsonl` or `-flag.jsonl`; judge summaries separate variants.
+The [epistemics sprint plan](experiments/epistemics-sprint/PLAN.md) compares two interventions against the pre-existing baseline. `scripts/run.py --variant baseline|prompt|flag` defaults to baseline. Prompt adds one instruction sentence; flag appends a descriptive note for empty or unreadable bodies, empty containers and nulls. It cannot detect plausible zero values or shortened lists, and also flags genuinely empty data. Each run records its variant and both the raw API body (`sent_body`, used by the unchanged judge) and the text returned to the model (`returned_body`). Non-baseline filenames end in `-prompt.jsonl` or `-flag.jsonl`; judge summaries separate variants. Everything up to commit bc6e98a is pre-existing work, done before the sprint; the sprint changes are commits 4c8b1c5 and 7b2942b.
 
 ## Licences and terms
 
