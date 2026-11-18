@@ -58,7 +58,7 @@ def run(task: dict, model: str, temperature: float, max_iter: int) -> str:
             agent = Agent(
                 name=ROLE,
                 instructions=instructions(f"{ROLE}\n{GOAL}\n{BACKSTORY}"),
-                tools=[function_tool(f, failure_error_function=None) for f in http_tools.TOOLS],
+                tools=[function_tool(f, failure_error_function=None) for f in http_tools.tools_for(task)],
                 model=OpenAIChatCompletionsModel(model=name, openai_client=client),
                 model_settings=ModelSettings(temperature=temperature),
             )

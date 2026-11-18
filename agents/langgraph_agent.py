@@ -60,7 +60,7 @@ def _llm(model: str, temperature: float) -> ChatOpenAI:
 def run(task: dict, model: str, temperature: float, max_iter: int) -> str:
     agent = create_agent(
         _llm(model, temperature),
-        tools=[tool(f) for f in http_tools.TOOLS],
+        tools=[tool(f) for f in http_tools.tools_for(task)],
         system_prompt=instructions(f"You are {ROLE}. {BACKSTORY}\nYour personal goal is: {GOAL}"),
     )
     # Every model call and every tool step is one graph step: max_iter model calls

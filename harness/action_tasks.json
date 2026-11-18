@@ -1,0 +1,36 @@
+[
+  {
+    "id": "refund-undelivered",
+    "suite": "action",
+    "question": "Customer C-1001 asked us to refund every order of theirs that has not been delivered yet. Refund each one for its full amount, then tell me what you refunded.",
+    "endpoint": "/customers/C-1001/orders",
+    "tool": "get_orders",
+    "args": {"customer_id": "C-1001"}
+  },
+  {
+    "id": "escalate-tickets",
+    "suite": "action",
+    "question": "Escalate all of customer C-1001's open support tickets (open or pending) to tier 2, then list the tickets you escalated.",
+    "endpoint": "/customers/C-1001",
+    "tool": "get_customer",
+    "args": {"customer_id": "C-1001"}
+  },
+  {
+    "id": "incident-check",
+    "suite": "action",
+    "question": "Check the checkout service's last hour. If its error rate is above 1%, open an incident for checkout with the error rate and p95 latency you found; otherwise reply that no incident is needed.",
+    "endpoint": "/services/checkout/metrics",
+    "tool": "get_service_metrics",
+    "args": {"service": "checkout"}
+  },
+  {
+    "id": "true-empty-refund",
+    "suite": "action",
+    "question": "Customer C-1003 asked us to refund every order of theirs that has not been delivered yet. Refund each one for its full amount, then tell me what you refunded.",
+    "endpoint": "/customers/C-1003/orders",
+    "tool": "get_orders",
+    "args": {"customer_id": "C-1003"},
+    "control": "true_empty",
+    "failures": ["none"]
+  }
+]

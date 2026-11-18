@@ -81,3 +81,39 @@ def get_service_metrics(service: str) -> str:
 
 
 TOOLS = [get_customer, get_orders, get_service_metrics]
+
+
+def _post(path: str, payload: dict) -> str:
+    base = os.environ.get("ROI_API_BASE", "http://127.0.0.1:8000")
+    request = urllib.request.Request(base + path, data=json.dumps(payload).encode("utf-8"),
+                                     headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            body = response.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+    return tool_output(body)
+
+
+def refund_order(order_id: str, amount_eur: float) -> str:
+    """Refund an order by order ID for the supplied amount in euros."""
+    return _post(f"/orders/{quote(order_id, safe='')}/refund", {"amount_eur": amount_eur})
+
+
+def escalate_ticket(ticket_id: str, tier: int) -> str:
+    """Escalate a support ticket by ticket ID to the supplied support tier."""
+    return _post(f"/tickets/{quote(ticket_id, safe='')}/escalate", {"tier": tier})
+
+
+def open_incident(service: str, error_rate: float, p95_ms: float, summary: str) -> str:
+    """Open an incident for a service with its error rate, p95 latency in ms and summary. error_rate is a fraction, e.g. 0.012."""
+    return _post("/incidents", {"service": service, "error_rate": error_rate,
+                               "p95_ms": p95_ms, "summary": summary})
+
+
+ACTION_TOOLS = TOOLS + [refund_order, escalate_ticket, open_incident]
+
+
+def tools_for(task: dict) -> list:
+    """Expose writes only to action-suite tasks."""
+    return ACTION_TOOLS if task.get("suite") == "action" else TOOLS

@@ -7,6 +7,7 @@ Run:  python mock_api/server.py --port 8001
 """
 import argparse
 import json
+import math
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -85,6 +86,57 @@ ROUTES = [
 
 
 class Handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        # Acknowledgements only: writes never mutate the deterministic GET data.
+        path = self.path.split("?", 1)[0]
+        try:
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
+        except (ValueError, UnicodeDecodeError):
+            self._post_reply(400, {"error": "bad JSON"})
+            return
+        if not isinstance(body, dict):
+            self._post_reply(400, {"error": "expected a JSON object"})
+            return
+
+        def number(value):
+            return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+        refund = re.fullmatch(r"/orders/([\w-]+)/refund", path)
+        escalate = re.fullmatch(r"/tickets/([\w-]+)/escalate", path)
+        if refund:
+            if not any(order["id"] == refund[1] for orders in ORDERS.values() for order in orders):
+                self._post_reply(404, {"error": "order not found"})
+                return
+            valid = number(body.get("amount_eur"))
+        elif escalate:
+            if not any(ticket["id"] == escalate[1] for customer in CUSTOMERS.values()
+                       for ticket in customer["open_tickets"]):
+                self._post_reply(404, {"error": "ticket not found"})
+                return
+            valid = type(body.get("tier")) is int
+        elif path == "/incidents":
+            valid = (isinstance(body.get("service"), str)
+                     and number(body.get("error_rate")) and number(body.get("p95_ms"))
+                     and isinstance(body.get("summary"), str))
+        else:
+            self._post_reply(404, {"error": "no such endpoint"})
+            return
+        if not valid:
+            self._post_reply(400, {"error": "invalid request fields"})
+            return
+        response = {"ok": True}
+        if path == "/incidents":
+            response["incident_id"] = "INC-900"
+        self._post_reply(200, response)
+
+    def _post_reply(self, status, body):
+        payload = json.dumps(body).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
     def do_GET(self):
         path = self.path.split("?", 1)[0]
         for pattern, handler in ROUTES:

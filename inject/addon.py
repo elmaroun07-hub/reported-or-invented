@@ -133,6 +133,7 @@ class Injector:
             "ts": time.time(),
             "run_id": scenario.get("run_id"),
             "method": flow.request.method,
+            "request_body": flow.request.get_text(strict=False) or "",
             "url": flow.request.pretty_url,
             "rule_path": rule["path"],
             "failure": failure,

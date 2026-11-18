@@ -83,7 +83,7 @@ async def _run(task: dict, model: str, temperature: float, max_iter: int) -> str
         name="operations_assistant",
         model=_llm(model),
         instruction=instructions(f"You are {ROLE}. {BACKSTORY}\nYour personal goal is: {GOAL}"),
-        tools=list(http_tools.TOOLS),
+        tools=list(http_tools.tools_for(task)),
         generate_content_config=types.GenerateContentConfig(temperature=temperature),
         before_model_callback=_drop_replayed_reasoning,
     )

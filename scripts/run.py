@@ -40,8 +40,9 @@ def main():
     p.add_argument("--framework", required=True, choices=["crewai", "langgraph", "smolagents", "openai_agents", "adk"])
     p.add_argument("--model", required=True)
     p.add_argument("--variant", choices=["baseline", "prompt", "flag"], default="baseline")
+    p.add_argument("--suite", choices=["answer", "action"], default="answer")
     p.add_argument("--temperature", type=float, default=0.0)
-    p.add_argument("--repeats", type=int, default=1)
+    p.add_argument("--repeats", type=int, default=None, help="default: answer 1, action 3")
     p.add_argument("--tasks", default="", help="comma-separated task ids (default: all)")
     p.add_argument("--failures", default="", help=f"comma-separated, from {failures_all}")
     p.add_argument("--max-iter", type=int, default=6)
@@ -49,13 +50,16 @@ def main():
     p.add_argument("--port-base", type=int, default=8000,
                    help="proxy port; the mock API uses port-base + 1")
     args = p.parse_args()
+    if args.repeats is None:
+        args.repeats = 3 if args.suite == "action" else 1
 
     load_dotenv(ROOT / ".env")
     os.environ["ROI_API_BASE"] = f"http://127.0.0.1:{args.port_base}"
     os.environ["ROI_VARIANT"] = args.variant
     adapter = importlib.import_module(f"agents.{args.framework}_agent")
 
-    tasks = json.loads((ROOT / "harness" / "tasks.json").read_text(encoding="utf-8"))
+    task_file = "action_tasks.json" if args.suite == "action" else "tasks.json"
+    tasks = json.loads((ROOT / "harness" / task_file).read_text(encoding="utf-8"))
     if args.tasks:
         wanted = set(args.tasks.split(","))
         tasks = [t for t in tasks if t["id"] in wanted]
@@ -67,6 +71,8 @@ def main():
     session = time.strftime("%Y%m%d-%H%M%S")
     runs_dir = ROOT / "runs"
     suffix = "" if args.variant == "baseline" else f"-{args.variant}"
+    if args.suite == "action":
+        suffix = "-action" + suffix
     out_path = runs_dir / f"{session}-{args.framework}{suffix}.jsonl"
     plan = [(t, f, r) for t in tasks for f in t.get("failures", failures)
             for r in range(args.repeats)]
@@ -114,6 +120,10 @@ def main():
                                 "returned_body": tool_output(c["sent_body"])}
                                for c in calls],
             }
+            if args.suite == "action":
+                record["suite"] = "action"
+                for entry, call in zip(record["tool_calls"], calls):
+                    entry.update(method=call["method"], request_body=call["request_body"])
             out.write(json.dumps(record) + "\n")
             out.flush()
             status = "ERROR " + error[:60] if error else (answer or "")[:60].replace("\n", " ")

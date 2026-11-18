@@ -58,13 +58,26 @@ class ScriptedLLM(BaseLLM):
 
 def _llm(model: str, temperature: float, task: dict):
     if model == "scripted":
-        return ScriptedLLM(model="scripted", script=[
+        script = [
             "Thought: I need data from the company API.\n"
             f"Action: {task['tool']}\n"
             f"Action Input: {json.dumps(task['args'])}",
             "Thought: I now know the final answer\n"
             "Final Answer: scripted run, plumbing check only",
-        ])
+        ]
+        if task.get("suite") == "action":
+            # Deliberately fixed, including the true-empty control: this checks
+            # POST plumbing and is not an agent-behaviour measurement.
+            write_tool, payload = {
+                "refund-undelivered": ("refund_order", {"order_id": "O-5530", "amount_eur": 89.9}),
+                "true-empty-refund": ("refund_order", {"order_id": "O-5530", "amount_eur": 89.9}),
+                "escalate-tickets": ("escalate_ticket", {"ticket_id": "T-77", "tier": 2}),
+                "incident-check": ("open_incident", {"service": "checkout", "error_rate": .012,
+                                                     "p95_ms": 340, "summary": "Plumbing check"}),
+            }[task["id"]]
+            script.insert(1, "Thought: Exercise the write tool.\n"
+                          f"Action: {write_tool}\nAction Input: {json.dumps(payload)}")
+        return ScriptedLLM(model="scripted", script=script)
     provider, _, name = model.partition("/")
     if provider not in PROVIDERS or not name:
         raise ValueError(f"model must be <provider>/<model> with provider in {sorted(PROVIDERS)}")
@@ -90,7 +103,7 @@ def _llm(model: str, temperature: float, task: dict):
 def run(task: dict, model: str, temperature: float, max_iter: int) -> str:
     agent = Agent(
         role=ROLE, goal=GOAL, backstory=instructions(BACKSTORY),
-        tools=[tool(f.__name__)(f) for f in http_tools.TOOLS],
+        tools=[tool(f.__name__)(f) for f in http_tools.tools_for(task)],
         llm=_llm(model, temperature, task),
         max_iter=max_iter, allow_delegation=False, verbose=False,
     )
