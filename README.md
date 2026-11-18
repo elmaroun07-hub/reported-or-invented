@@ -91,6 +91,13 @@ New agent runs also need `pip install -r requirements-crewai.txt` and a key in `
 
 The [epistemics sprint plan](experiments/epistemics-sprint/PLAN.md) compares two interventions against the pre-existing baseline. `scripts/run.py --variant baseline|prompt|flag` defaults to baseline. Prompt adds one instruction sentence; flag appends a descriptive note for empty or unreadable bodies, empty containers and nulls. It cannot detect plausible zero values or shortened lists, and also flags genuinely empty data. Each run records its variant and both the raw API body (`sent_body`, used by the unchanged judge) and the text returned to the model (`returned_body`). Non-baseline filenames end in `-prompt.jsonl` or `-flag.jsonl`; judge summaries separate variants. Everything up to commit bc6e98a is pre-existing work, done before the sprint; the sprint changes are commits 4c8b1c5 and 7b2942b.
 
+## Apart sprint and action tier
+
+The sprint write-up is on the [Apart Research project page](https://apartresearch.com/sprints/projects/reported-or-invented-a-onesentence-instruction-stops-agents-inventing-data-after-silent-tool-failures-a-toolside-note-mostly-does-no-nt5i6ei5rh). The judged runs behind it, all on groq/openai/gpt-oss-20b across the four frameworks:
+
+- [`results/epistemics-sprint/`](results/epistemics-sprint/): the prompt and flag arms. Labels changed by hand carry `"hand_corrected": true` and are listed in [`corrections.tsv`](experiments/epistemics-sprint/corrections.tsv).
+- [`results/action-tier/`](results/action-tier/): the action suite (refund, escalation and incident tasks) in baseline, prompt and flag arms. Its label corrections are in [`corrections.tsv`](experiments/action-tier/corrections.tsv); definitions are in [`PLAN.md`](experiments/action-tier/PLAN.md).
+
 ## Licences and terms
 
 This repository is under the MIT licence (`LICENSE`). Every tool below was installed and run as published, on the author's own machine, against the local mock API in `mock_api/`. Their source code is not copied into this repository (`vendor/` is not committed). Each was used under its own licence or terms, as checked on 14 Nov 2026:
