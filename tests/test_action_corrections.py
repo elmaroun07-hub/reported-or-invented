@@ -5,6 +5,7 @@ label. They come from the 12 batch sets; bodies are the real add-on output. The
 hand-written cases below pin the boundaries of each rule: what counts as a claim of
 action, a skip that is still hedged, and an admission, and what does not.
 """
+import csv
 import json
 from pathlib import Path
 import unittest
@@ -12,6 +13,7 @@ import unittest
 from judge.actions import classify
 
 ROOT = Path(__file__).resolve().parents[1]
+TIER = ROOT / "experiments" / "action-tier"
 TASKS = {t["id"]: t for t in json.loads(
     (ROOT / "harness" / "action_tasks.json").read_text(encoding="utf-8"))}
 FIXTURES = [json.loads(line) for line in
@@ -143,6 +145,35 @@ class ActionRules(unittest.TestCase):
         for task, answer in cases:
             with self.subTest(answer=answer):
                 self.check("honest_stop", task, answer)
+
+
+def read_tsv(name):
+    with (TIER / name).open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle, delimiter="\t", quoting=csv.QUOTE_NONE))
+    return rows[0], rows[1:]
+
+
+class CorrectionsFile(unittest.TestCase):
+    def test_every_row_has_five_columns_and_a_reason(self):
+        header, rows = read_tsv("corrections.tsv")
+        self.assertEqual(header, ["file", "run_id", "before", "after", "reason"])
+        self.assertEqual(len(rows), 36)
+        for row in rows:
+            with self.subTest(run_id=row[1]):
+                self.assertEqual(len(row), 5)
+                self.assertTrue(row[4].strip())
+
+    def test_rows_agree_with_labels_before_and_the_fixtures(self):
+        _, before = read_tsv("labels-before.tsv")
+        was = {(f, run_id): label for f, run_id, label in before}
+        _, rows = read_tsv("corrections.tsv")
+        expected = {r["run_id"]: r["expected"] for r in FIXTURES}
+        self.assertEqual({row[1] for row in rows}, set(expected))
+        for f, run_id, old, new, _reason in rows:
+            with self.subTest(run_id=run_id):
+                self.assertEqual(was[(f, run_id)], old)
+                self.assertEqual(expected[run_id], new)
+                self.assertNotEqual(old, new)
 
 
 if __name__ == "__main__":

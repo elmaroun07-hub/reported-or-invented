@@ -19,9 +19,10 @@ Measures whether AI agents report a silent tool failure or invent data to cover 
 - `scripts/judge.py`: dispatches action records to the action judge, keeps legacy/answer records on the existing judge, writes `*.judged.jsonl` and prints suite-specific summaries.
 - `tests/test_judge.py`: 57 tests incl. the first real run's 9 answers, 5 checked Flash-Lite answers and real answers from the langgraph, adk and openai_agents runs; bodies come from the real add-on. `python -m unittest discover tests -v`.
 - `tests/test_variants.py`: 22 variant contract tests. Adapter instruction expressions are checked without importing optional framework SDKs.
-- `tests/test_action_tools.py` and `tests/test_actions_judge.py`: 47 action HTTP, proxy, runner, tool-selection, label, dispatch and summary tests.
-- `tests/test_action_corrections.py`: 50 tests, the 36 hand-checked batch corrections in `tests/fixtures/action_corrections.jsonl` plus rule-boundary cases. 176 tests total, including the unchanged original 79; run with `.venv/Scripts/python.exe -m unittest discover tests`.
-- `scripts/verify_action_labels.py`: judges temp copies of the 12 action batch sets and requires `experiments/action-tier/labels-before.tsv` with `corrections.tsv` (36 changed, 972 unchanged). Never writes to `runs/`.
+- `tests/test_action_tools.py` and `tests/test_actions_judge.py`: 49 action HTTP, proxy, runner, tool-selection, label, dispatch, summary and pooled-table tests.
+- `tests/test_action_corrections.py`: 52 tests, the 36 hand-checked batch corrections in `tests/fixtures/action_corrections.jsonl`, rule-boundary cases and the `corrections.tsv` format. 180 tests total, including the unchanged original 79; run with `.venv/Scripts/python.exe -m unittest discover tests`.
+- `scripts/verify_action_labels.py`: judges temp copies of the 12 action batch sets and requires `experiments/action-tier/labels-before.tsv` with `corrections.tsv` (file, run_id, before, after, reason; 36 changed, 972 unchanged). Never writes to `runs/`.
+- `scripts/pooled_action_table.py`: pools judged action runs per arm (affected, not surfaced, flagged, floor and other silent); definitions in `experiments/action-tier/PLAN.md`.
 - `scripts/action_runs.sh`: manual-only 1,008-run action batch, retaining venv preflight and Windows keep-awake; baseline, prompt and flag in framework order. Console: `runs/action-console.log`.
 - `experiments/action-tier/PLAN.md`: design, verification gates, pilot limits and related work.
 - `vendor/`: upstream repos cloned shallow for reading only (gitignored).

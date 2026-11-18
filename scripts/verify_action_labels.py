@@ -3,7 +3,8 @@
   python scripts/verify_action_labels.py
 
 Reads experiments/action-tier/labels-before.tsv (the labels the batch was first judged
-with) and corrections.tsv (the labels that are meant to change). Copies the 12 raw run
+with) and corrections.tsv (file, run_id, before, after, reason: the labels that are meant
+to change, each with a reason). Copies the 12 raw run
 files to a temporary directory, judges them there with the current code and compares:
 a run in corrections.tsv must get its "after" label, every other run must keep its
 "before" label. Nothing is written to runs/.
@@ -22,22 +23,33 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 TIER = ROOT / "experiments" / "action-tier"
 RUNS = ROOT / "runs"
+CORRECTION_COLUMNS = ["file", "run_id", "before", "after", "reason"]
 
 
 def read_tsv(path):
+    # QUOTE_NONE: the reason column is free text and may contain quote characters.
     with path.open(encoding="utf-8", newline="") as handle:
-        rows = list(csv.reader(handle, delimiter="\t"))
+        rows = list(csv.reader(handle, delimiter="\t", quoting=csv.QUOTE_NONE))
     return rows[0], rows[1:]
 
 
 def main():
     sys.stdout.reconfigure(errors="replace")
     _, before_rows = read_tsv(TIER / "labels-before.tsv")
-    _, correction_rows = read_tsv(TIER / "corrections.tsv")
+    correction_header, correction_rows = read_tsv(TIER / "corrections.tsv")
 
     before = {(f, rid): label for f, rid, label in before_rows}
-    corrections = {(f, rid): (was, now) for f, rid, was, now in correction_rows}
     problems = []
+    if correction_header != CORRECTION_COLUMNS:
+        problems.append(("corrections.tsv", "-", ",".join(CORRECTION_COLUMNS),
+                         ",".join(correction_header), "header"))
+    corrections = {}
+    for row in correction_rows:
+        if len(row) != len(CORRECTION_COLUMNS) or not row[4].strip():
+            problems.append((row[0], row[1] if len(row) > 1 else "-",
+                             "5 columns with a reason", f"{len(row)} columns", "\t".join(row)))
+            continue
+        corrections[(row[0], row[1])] = (row[2], row[3])
 
     for key, (was, now) in corrections.items():
         if key not in before:
